@@ -1,0 +1,7 @@
+Metric,ARIMA,LSTM
+MAE,16.3573,2.7858
+RMSE,20.9511,3.8442
+MAPE,57.99%,12.38%
+MAE Improvement,-,82.97%
+Sequence Length,-,24
+Features Used,1 (PM2.5 only),11 (multivariate)

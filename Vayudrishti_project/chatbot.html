@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VayuDrishti Chatbot</title>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background:#f2f2f2;
+    padding:20px;
+}
+
+h2{
+    color:#1a7a3c;
+}
+
+#chat{
+    margin-top:20px;
+    background:white;
+    padding:15px;
+    height:400px;
+    overflow-y:auto;
+    border-radius:10px;
+    box-shadow:0 0 5px rgba(0,0,0,0.1);
+}
+
+p{
+    margin:8px 0;
+}
+
+input{
+    width:320px;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    padding:10px 15px;
+    background:#1a7a3c;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#146c2e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>🌬️ VayuDrishti AQI Chatbot</h2>
+
+<input
+    type="text"
+    id="input"
+    placeholder="Try: Rajpur, ISBT, Clock Tower"
+>
+
+<button onclick="sendMessage()">Send</button>
+
+<div id="chat"></div>
+
+<script>
+
+const chatBox = document.getElementById("chat");
+
+// =========================
+// ADD MESSAGE
+// =========================
+function addMessage(message){
+
+    const p = document.createElement("p");
+    p.textContent = message;
+
+    chatBox.appendChild(p);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// =========================
+// SEND MESSAGE
+// =========================
+async function sendMessage(){
+
+    const input = document.getElementById("input");
+
+    const query = input.value.trim();
+
+    if(query === ""){
+        return;
+    }
+
+    addMessage("👤 " + query);
+
+    input.value = "";
+
+    try{
+
+        const response = await fetch(
+            "http://127.0.0.1:8000/chat/?query=" +
+            encodeURIComponent(query)
+        );
+
+        const data = await response.json();
+
+        if(data.error){
+
+            addMessage("❌ " + data.error);
+            return;
+        }
+
+        if(data.type === "aqi"){
+
+            addMessage("🌍 Zone: " + data.zone);
+            addMessage("🌬️ AQI: " + data.aqi);
+            addMessage("💨 PM2.5: " + data.pm25);
+            addMessage("🕒 Time: " + data.time);
+
+        }
+        else{
+
+            addMessage("🤖 " + data.response);
+        }
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        addMessage(
+            "❌ Cannot connect to FastAPI server. Make sure api.py is running."
+        );
+    }
+}
+
+// =========================
+// ENTER KEY SUPPORT
+// =========================
+document
+.getElementById("input")
+.addEventListener("keypress", function(event){
+
+    if(event.key === "Enter"){
+        sendMessage();
+    }
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,204 @@
+{
+  "generated_at": "2026-06-02 23:35:46.822769",
+  "forecast": [
+    {
+      "hour": 1,
+      "time": "2026-05-30 00:00:00",
+      "pm25": 35.93,
+      "category": "Unhealthy for Sensitive",
+      "color": "orange"
+    },
+    {
+      "hour": 2,
+      "time": "2026-05-30 01:00:00",
+      "pm25": 35.48,
+      "category": "Unhealthy for Sensitive",
+      "color": "orange"
+    },
+    {
+      "hour": 3,
+      "time": "2026-05-30 02:00:00",
+      "pm25": 35.77,
+      "category": "Unhealthy for Sensitive",
+      "color": "orange"
+    },
+    {
+      "hour": 4,
+      "time": "2026-05-30 03:00:00",
+      "pm25": 35.2,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 5,
+      "time": "2026-05-30 04:00:00",
+      "pm25": 33.2,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 6,
+      "time": "2026-05-30 05:00:00",
+      "pm25": 31.81,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 7,
+      "time": "2026-05-30 06:00:00",
+      "pm25": 31.99,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 8,
+      "time": "2026-05-30 07:00:00",
+      "pm25": 30.63,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 9,
+      "time": "2026-05-30 08:00:00",
+      "pm25": 29.57,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 10,
+      "time": "2026-05-30 09:00:00",
+      "pm25": 28.62,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 11,
+      "time": "2026-05-30 10:00:00",
+      "pm25": 28.05,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 12,
+      "time": "2026-05-30 11:00:00",
+      "pm25": 27.9,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 13,
+      "time": "2026-05-30 12:00:00",
+      "pm25": 27.24,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 14,
+      "time": "2026-05-30 13:00:00",
+      "pm25": 28.19,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 15,
+      "time": "2026-05-30 14:00:00",
+      "pm25": 29.6,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 16,
+      "time": "2026-05-30 15:00:00",
+      "pm25": 29.33,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 17,
+      "time": "2026-05-30 16:00:00",
+      "pm25": 28.26,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 18,
+      "time": "2026-05-30 17:00:00",
+      "pm25": 27.03,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 19,
+      "time": "2026-05-30 18:00:00",
+      "pm25": 25.94,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 20,
+      "time": "2026-05-30 19:00:00",
+      "pm25": 25.06,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 21,
+      "time": "2026-05-30 20:00:00",
+      "pm25": 24.36,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 22,
+      "time": "2026-05-30 21:00:00",
+      "pm25": 23.87,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 23,
+      "time": "2026-05-30 22:00:00",
+      "pm25": 23.55,
+      "category": "Moderate",
+      "color": "yellow"
+    },
+    {
+      "hour": 24,
+      "time": "2026-05-30 23:00:00",
+      "pm25": 23.28,
+      "category": "Moderate",
+      "color": "yellow"
+    }
+  ],
+  "metrics": {
+    "lstm": {
+      "mae": 2.7858,
+      "rmse": 3.8442,
+      "mape": 12.38
+    },
+    "arima": {
+      "mae": 16.3573,
+      "rmse": 20.9511,
+      "mape": 57.99
+    },
+    "improvement_pct": 82.97
+  },
+  "model_info": {
+    "type": "Multivariate LSTM",
+    "seq_len": 24,
+    "features_used": 11,
+    "feature_list": [
+      "pm25",
+      "pm10",
+      "co",
+      "no2",
+      "so2",
+      "o3",
+      "traffic_flow_speed",
+      "traffic_congestion",
+      "wind_speed",
+      "humidity",
+      "aerosol"
+    ]
+  }
+}

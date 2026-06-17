@@ -1,114 +1,156 @@
 import streamlit as st
 import pandas as pd
+import importlib.util
+import sys
+import os
+
+from utils.data_loader import load_data
+from utils.aqi_helpers import aqi_category, aqi_color, health_message
+
+# ── Safe page loader ──────────────────────────────────
+def _load_page(name: str, filename: str):
+    base = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base, "pages", filename)
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_map_mod = _load_page("map_page", "map.py")
+_analytics = _load_page("analytics", "2_analytics.py")
+_aqiagents = _load_page("aqiagents", "4_AQI_Agent.py")
+_report = _load_page("report_gen", "report_generator.py")
+_alert = _load_page("prediction", "prediction.py")
 
 # ==================================================
 # PAGE CONFIG
 # ==================================================
-
 st.set_page_config(
     page_title="VayuDrishti",
     page_icon="🌬️",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 # ==================================================
 # LOAD DATA
 # ==================================================
-
-@st.cache_data
-def load_data():
-    df = pd.read_excel(
-        "data/dehradun_master_dataset_cleaned.xlsx"
-    )
-
-    df["datetime"] = pd.to_datetime(df["datetime"])
-
-    return df
-
 df = load_data()
 
-# ==================================================
-# HOME PAGE
-# ==================================================
+if df.empty:
+    st.error("❌ Dataset could not be loaded.")
+    st.stop()
 
-st.title("🌬️ VayuDrishti - Dehradun Air Quality Monitoring System")
-
-st.markdown("""
-### Welcome to VayuDrishti
-
-This dashboard provides:
-
-- 🗺️ GIS AQI Mapping
-- 📈 Air Quality Analytics
-- 📊 AQI Insights
-- 🚦 Traffic vs Pollution Analysis
-- 💨 Pollutant Monitoring
-- 🌍 Zone-wise Air Quality Assessment
-""")
+df = df.convert_dtypes()
 
 # ==================================================
-# KPI CARDS
+# SIDEBAR (UNCHANGED)
 # ==================================================
+with st.sidebar:
+    st.markdown("""
+    <div style="padding: 24px 12px 8px 12px; text-align: center;">
+        <div style="font-size: 38px;">🌬️</div>
+        <div style="font-size:20px; font-weight:800; color:#FFFFFF;">
+            VayuDrishti
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric(
-    "Total Records",
-    f"{len(df):,}"
-)
-
-col2.metric(
-    "Zones",
-    df["zone"].nunique()
-)
-
-col3.metric(
-    "Average EU AQI",
-    f"{df['eu_aqi'].mean():.1f}"
-)
-
-col4.metric(
-    "Average PM2.5",
-    f"{df['pm25'].mean():.1f}"
-)
-
-st.divider()
-
-# ==================================================
-# DATA PREVIEW
-# ==================================================
-
-st.subheader("📋 Dataset Preview")
-
-st.dataframe(
-    df.head(20),
-    use_container_width=True
-)
-
-st.divider()
-
-# ==================================================
-# DATASET INFORMATION
-# ==================================================
-
-st.subheader("📊 Dataset Information")
-
-info = pd.DataFrame({
-    "Metric": [
-        "Rows",
-        "Columns",
-        "Date Range Start",
-        "Date Range End"
-    ],
-    "Value": [
-        len(df),
-        len(df.columns),
-        str(df["datetime"].min()),
-        str(df["datetime"].max())
+    nav_items = [
+        ("🏠", "Home", "home"),
+        ("🗺️", "GIS Map", "map"),
+        ("📈", "Analytics", "analytics"),
+        ("🤖", "AQI Agents", "aqiagents"),
+        ("📄", "Reports", "report"),
+        ("🔮", "Prediction", "prediction"),
     ]
-})
 
-st.dataframe(
-    info,
-    use_container_width=True
-)
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "home"
+
+    for icon, label, key in nav_items:
+        if st.button(f"{icon} {label}", key=key, use_container_width=True):
+            st.session_state["current_page"] = key
+
+# ==================================================
+# PAGE ROUTING
+# ==================================================
+page = st.session_state["current_page"]
+
+# ── HOME ─────────────────────────────────────────────
+if page == "home":
+
+    st.markdown("""
+    <div class="hero-band">
+        <h1>🌬️ VayuDrishti</h1>
+        <p>AI-Powered Air Quality Intelligence Platform · Dehradun</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # ==================================================
+    # THEORY DASHBOARD OVERVIEW (REPLACED METRICS)
+    # ==================================================
+    st.markdown("### 📊 Dashboard Overview")
+
+    st.markdown("""
+    The **VayuDrishti Dashboard** provides a real-time interpretation of air quality conditions across Dehradun.
+
+    It integrates multiple intelligence layers such as GIS mapping, pollutant tracking, and zone-level analysis to help understand how air pollution behaves across different environments.
+
+    ### Key Insights Generated by the System:
+
+    - 🌍 The platform continuously monitors air quality variations across multiple geographic zones.
+    - 🏙️ Urban regions are typically more exposed to pollution due to traffic density and human activity.
+    - 🏞️ Elevated and green zones generally reflect better air circulation and lower pollution concentration.
+    - 🏗️ Construction and industrial activity significantly influence particulate matter levels.
+    - 📡 The system supports predictive analytics and alert generation for sensitive zones.
+
+    This dashboard is not just a data display tool, but an **intelligent air quality decision support system**.
+    """)
+
+    st.divider()
+
+    # ==================================================
+    # ZONE INSIGHTS
+    # ==================================================
+    st.markdown("### 🗺️ Zone-wise Air Quality Insights")
+
+    st.markdown("""
+    - Urban zones show higher AQI due to traffic  
+    - Hill areas have cleaner air  
+    - Construction zones increase PM2.5  
+    - Residential zones are moderate  
+    """)
+
+# ── OTHER PAGES ─────────────────────────────────────
+# ── OTHER PAGES ─────────────────────────────────────
+
+elif page == "map":
+    _map_mod.render_map(df)
+
+elif page == "analytics":
+    _analytics.render_analytics(df)
+
+elif page == "aqiagents":
+    _aqiagents.render_aqiagents(df)
+
+elif page == "report":
+    _report.render_report_generator(df)
+
+elif page == "prediction":
+
+    if hasattr(_alert, "render_prediction"):
+        _alert.render_prediction(df)
+
+    elif hasattr(_alert, "render_alert_system"):
+        _alert.render_alert_system(df)
+
+    else:
+        st.error(
+            "prediction.py must contain either "
+            "'render_prediction(df)' or 'render_alert_system(df)'"
+        )

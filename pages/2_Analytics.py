@@ -2,315 +2,124 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from gis_module.preprocessing import clean_data
+from utils.data_loader import load_data  # <--- Linked to your function
 
-# ==================================================
-# PAGE CONFIG
-# ==================================================
-
-st.set_page_config(
-    page_title="Analytics",
-    page_icon="📈",
-    layout="wide"
-)
-
-st.title("📈 VayuDrishti - Air Quality Analytics")
-
-# ==================================================
-# LOAD DATA
-# ==================================================
-
+# 1. High-Performance Data Loading
 @st.cache_data
-def load_data():
-    df = pd.read_excel(
-        "data/dehradun_master_dataset_cleaned.xlsx"
-    )
-
+def get_ready_data():
+    """Fetches, cleans, and prepares the dataset for analysis."""
+    raw_df = load_data() 
+    df = clean_data(raw_df)
     df["datetime"] = pd.to_datetime(df["datetime"])
-
+    # Ensure hour/day columns exist for the charts
+    df["hour"] = df["datetime"].dt.hour
     return df
 
-df = load_data()
+def render_analytics(df):
+    # Page Config (Must be first Streamlit command if not set in main)
+    # st.set_page_config(page_title="VayuDrishti Analytics", layout="wide")
 
-# ==================================================
-# SIDEBAR FILTERS
-# ==================================================
+   
 
-st.sidebar.header("🔍 Analytics Filters")
-
-selected_zones = st.sidebar.multiselect(
-    "Select Zones",
-    sorted(df["zone"].unique()),
-    default=sorted(df["zone"].unique())
-)
-
-selected_pollutant = st.sidebar.selectbox(
-    "Select Pollutant",
-    [
-        "eu_aqi",
-        "us_aqi",
-        "pm25",
-        "pm10",
-        "co",
-        "no2",
-        "so2",
-        "o3"
+    # --- Sidebar Configuration ---
+    st.sidebar.header("🛠 Analytics Configuration")
+    
+    # Zone Filter
+    all_zones = ["Global (All Zones)"] + sorted(df["zone"].unique().tolist())
+    selected_zone = st.sidebar.selectbox("Geographic Focus", all_zones)
+    
+    # Parameter Multi-select
+    available_params = [
+        "eu_aqi", "us_aqi", "pm25", "pm10", "co", "no2", "so2", "o3", 
+        "traffic_flow_speed", "traffic_congestion", "wind_speed", 
+        "humidity", "aerosol"
     ]
-)
-
-# Date Filter
-start_date = df["datetime"].min().date()
-end_date = df["datetime"].max().date()
-
-date_range = st.sidebar.date_input(
-    "Select Date Range",
-    value=(start_date, end_date)
-)
-
-# ==================================================
-# FILTER DATA
-# ==================================================
-
-filtered = df[df["zone"].isin(selected_zones)]
-
-if len(date_range) == 2:
-    filtered = filtered[
-        (filtered["datetime"].dt.date >= date_range[0]) &
-        (filtered["datetime"].dt.date <= date_range[1])
-    ]
-
-# ==================================================
-# KPI CARDS
-# ==================================================
-
-st.subheader("📊 Key Metrics")
-
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric(
-    "Average EU AQI",
-    f"{filtered['eu_aqi'].mean():.1f}"
-)
-
-col2.metric(
-    "Average PM2.5",
-    f"{filtered['pm25'].mean():.1f}"
-)
-
-col3.metric(
-    "Average PM10",
-    f"{filtered['pm10'].mean():.1f}"
-)
-
-col4.metric(
-    "Average Traffic",
-    f"{filtered['traffic_congestion'].mean():.1f}"
-)
-
-st.divider()
-
-# ==================================================
-# TREND ANALYSIS
-# ==================================================
-
-st.subheader(
-    f"📈 {selected_pollutant.upper()} Trend Analysis"
-)
-
-trend = (
-    filtered.groupby(
-        [pd.Grouper(key="datetime", freq="D"), "zone"]
-    )[selected_pollutant]
-    .mean()
-    .reset_index()
-)
-
-fig = px.line(
-    trend,
-    x="datetime",
-    y=selected_pollutant,
-    color="zone",
-    markers=True,
-    title=f"{selected_pollutant.upper()} Trend by Zone",
-    template="plotly_dark"
-)
-
-fig.update_layout(
-    height=500,
-    hovermode="x unified"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-st.divider()
-
-# ==================================================
-# TRAFFIC VS AQI
-# ==================================================
-
-st.subheader("🚦 Traffic Congestion vs EU AQI")
-
-scatter = px.scatter(
-    filtered,
-    x="traffic_congestion",
-    y="eu_aqi",
-    color="zone",
-    size="pm25",
-    hover_data=[
-        "pm10",
-        "co",
-        "no2",
-        "so2",
-        "o3"
-    ],
-    title="Traffic Impact on Air Quality",
-    template="plotly_dark"
-)
-
-scatter.update_layout(height=550)
-
-st.plotly_chart(
-    scatter,
-    use_container_width=True
-)
-
-st.divider()
-
-# ==================================================
-# HEATMAP
-# ==================================================
-
-st.subheader("🔥 AQI Heatmap (Weekday vs Hour)")
-
-weekday_labels = {
-    0: "Mon",
-    1: "Tue",
-    2: "Wed",
-    3: "Thu",
-    4: "Fri",
-    5: "Sat",
-    6: "Sun"
-}
-
-pivot = filtered.pivot_table(
-    values="eu_aqi",
-    index="weekday",
-    columns="hour",
-    aggfunc="mean"
-)
-
-pivot.index = [
-    weekday_labels.get(i, i)
-    for i in pivot.index
-]
-
-heatmap = go.Figure(
-    data=go.Heatmap(
-        z=pivot.values,
-        x=pivot.columns,
-        y=pivot.index,
-        colorscale="RdYlGn_r"
-    )
-)
-
-heatmap.update_layout(
-    title="Pollution Pattern by Hour and Weekday",
-    template="plotly_dark",
-    height=500,
-    xaxis_title="Hour",
-    yaxis_title="Weekday"
-)
-
-st.plotly_chart(
-    heatmap,
-    use_container_width=True
-)
-
-st.divider()
-
-# ==================================================
-# RADAR CHART
-# ==================================================
-
-st.subheader("🕸️ Zone Pollutant Comparison")
-
-radar_data = (
-    filtered.groupby("zone")[
-        ["pm25", "pm10", "co", "no2", "so2", "o3"]
-    ]
-    .mean()
-)
-
-fig_radar = go.Figure()
-
-for zone in radar_data.index:
-
-    fig_radar.add_trace(
-        go.Scatterpolar(
-            r=radar_data.loc[zone].values,
-            theta=radar_data.columns,
-            fill="toself",
-            name=zone
-        )
+    selected_params = st.sidebar.multiselect(
+        "Analysis Parameters",
+        options=available_params,
+        default=["eu_aqi", "pm25", "pm10", "no2"]
     )
 
-fig_radar.update_layout(
-    polar=dict(
-        radialaxis=dict(
-            visible=True
+    # Date Range Filter
+    min_date = df["datetime"].min().date()
+    max_date = df["datetime"].max().date()
+    date_range = st.sidebar.date_input("Select Date Range", [min_date, max_date])
+
+    # --- Data Processing ---
+    # Filter by Zone
+    if selected_zone == "Global (All Zones)":
+        mask = (df["datetime"].dt.date >= date_range[0]) & (df["datetime"].dt.date <= date_range[1])
+        plot_df = df[mask]
+    else:
+        mask = (df["zone"] == selected_zone) & (df["datetime"].dt.date >= date_range[0]) & (df["datetime"].dt.date <= date_range[1])
+        plot_df = df[mask]
+
+    # --- UI Header ---
+    st.title("📊 VayuDrishti | Deep Analytics")
+    st.info(f"Viewing data for **{selected_zone}** from **{date_range[0]}** to **{date_range[1]}**")
+
+    # --- 1. Top Level KPIs ---
+    if selected_params:
+        st.subheader("📌 Average Concentrations")
+        kpi_cols = st.columns(len(selected_params[:6]))
+        for i, p in enumerate(selected_params[:6]):
+            avg_val = plot_df[p].mean()
+            kpi_cols[i].metric(label=p.replace("_", " ").upper(), value=f"{avg_val:.2f}")
+    
+    st.divider()
+
+    # --- 2. Interactive Time-Series ---
+    st.subheader("📈 Environmental Trend Analysis")
+    if selected_params:
+        # Resample to Hourly to prevent visual clutter
+        ts_df = plot_df.set_index("datetime").resample("h")[selected_params].mean().reset_index()
+        
+        fig_ts = px.line(
+            ts_df, x="datetime", y=selected_params,
+            template="plotly_dark",
+            labels={"value": "Level", "datetime": "Time"},
+            color_discrete_sequence=px.colors.qualitative.Bold
         )
-    ),
-    showlegend=True,
-    template="plotly_dark",
-    height=600
-)
+        fig_ts.update_layout(
+            hovermode="x unified",
+            xaxis_rangeslider_visible=True, # Pro-feature
+            legend=dict(orientation="h", yanchor="bottom", y=1, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_ts, use_container_width=True)
 
-st.plotly_chart(
-    fig_radar,
-    use_container_width=True
-)
+    # --- 3. Patterns & Correlations ---
+    col_a, col_b = st.columns(2)
 
-st.divider()
+    with col_a:
+        st.subheader("🕒 Diurnal (Hourly) Cycle")
+        if selected_params:
+            focus_p = st.selectbox("Select parameter for hourly breakdown:", selected_params)
+            h_df = plot_df.groupby("hour")[focus_p].mean().reset_index()
+            fig_h = px.area(h_df, x="hour", y=focus_p, color_discrete_sequence=["#00d4ff"])
+            st.plotly_chart(fig_h, use_container_width=True)
 
-# ==================================================
-# TOP POLLUTED ZONES
-# ==================================================
+    with col_b:
+        st.subheader("🔗 Relationship Heatmap")
+        if len(selected_params) > 1:
+            fig_corr = px.imshow(
+                plot_df[selected_params].corr(),
+                text_auto=".2f",
+                color_continuous_scale="RdBu_r"
+            )
+            st.plotly_chart(fig_corr, use_container_width=True)
+        else:
+            st.write("Add more parameters to see correlation.")
 
-st.subheader("🏭 Top Polluted Zones")
+    # --- 4. Comparative Bar Chart ---
+    st.divider()
+    st.subheader("🌍 Zone-wise Comparison")
+    if selected_params:
+        comp_p = st.selectbox("Rank Zones by:", selected_params)
+        rank_df = df.groupby("zone")[comp_p].mean().sort_values().reset_index()
+        fig_rank = px.bar(rank_df, x=comp_p, y="zone", orientation='h', color=comp_p, color_continuous_scale="Plasma")
+        st.plotly_chart(fig_rank, use_container_width=True)
 
-zone_rank = (
-    filtered.groupby("zone")["eu_aqi"]
-    .mean()
-    .sort_values(ascending=False)
-    .reset_index()
-)
-
-bar = px.bar(
-    zone_rank,
-    x="zone",
-    y="eu_aqi",
-    color="eu_aqi",
-    title="Average EU AQI by Zone",
-    template="plotly_dark"
-)
-
-st.plotly_chart(
-    bar,
-    use_container_width=True
-)
-
-st.divider()
-
-# ==================================================
-# DATA TABLE
-# ==================================================
-
-st.subheader("📋 Filtered Dataset")
-
-st.dataframe(
-    filtered,
-    use_container_width=True,
-    height=400
-)
+# Run page
+if __name__ == "__main__":
+    render_analytics()
